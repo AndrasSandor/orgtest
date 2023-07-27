@@ -6,7 +6,7 @@ on:
       - 'test1/**'
 
 jobs:
-  test:
+  test1:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
