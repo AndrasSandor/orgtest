@@ -1,0 +1,95 @@
+name: 'Plan Changes On Pull Request'
+on:
+  - pull_request
+env:
+  tf_version: '1.1.6'
+  tg_version: 'v0.36.1'
+  tf_working_dir: 'terraform/yugo'
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  terragrunt:
+    name: 'Plan Changes On Pull Request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::002724113606:role/yugo-github-oicd-role
+          aws-region: ap-southeast-1
+          role-session-name: GithubActionsCICDSession
+
+
+      - name: 'Checkout'
+        uses: actions/checkout@master
+      - name: 'Terragrunt Format'
+        uses: the-commons-project/terragrunt-github-actions@master
+        with:
+          tf_actions_version: ${{ env.tf_version }}
+          tg_actions_version: ${{ env.tg_version }}
+          tf_actions_binary: 'terraform'
+          tf_actions_subcommand: 'fmt'
+          tf_actions_working_dir: ${{ env.tf_working_dir }}
+          tf_actions_comment: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ls
+        run: ls -la
+      - name: ls1
+        run: ls -la ./terraform/yugo
+      - name: ls2
+        run: ls -la /usr/local/bin/
+      - name: echo aws
+        run: env
+      - name: echo aws config
+        run: aws configure list
+      - name: echo aws sns
+        run: aws sns list-topics
+      - name: echo aws s3
+        run: aws s3 ls s3://yugo-terraform-state
+      #- name: tf init
+      #  run: cd ./terraform/yugo && terragrunt run-all plan
+      #- name: setup tg
+      #  uses: eLco/setup-terragrunt@v1
+      #  with:
+      #    terragrunt_version: 0.36.1
+      #- name: run tg
+      #  run: cd ./terraform/yugo && terragrunt run-all plan
+
+      - name: 'Terragrunt Init'
+        uses: ./.github/actions/terragrunt-github-actions
+        with:
+          tf_actions_version: ${{ env.tf_version }}
+          tg_actions_version: ${{ env.tg_version }}
+          tf_actions_subcommand: 'init'
+          tf_actions_working_dir: ${{ env.tf_working_dir }}
+          tf_actions_comment: false
+          tf_actions_binary: 'terragrunt'
+          #args: '--terragrunt-log-level debug --terragrunt-debug'
+        #env:
+        #  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 'Terragrunt Validate'
+        uses: ./.github/actions/terragrunt-github-actions
+        with:
+          tf_actions_version: ${{ env.tf_version }}
+          tg_actions_version: ${{ env.tg_version }}
+          tf_actions_binary: 'terragrunt'
+          tf_actions_subcommand: 'validate'
+          tf_actions_working_dir: ${{ env.tf_working_dir }}
+          tf_actions_comment: false
+        #env:
+         # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 'Terragrunt Plan'
+        uses: ./.github/actions/terragrunt-github-actions
+        with:
+          tf_actions_version: ${{ env.tf_version }}
+          tg_actions_version: ${{ env.tg_version }}
+          tf_actions_subcommand: 'plan'
+          tf_actions_working_dir: ${{ env.tf_working_dir }}
+          tf_actions_comment: true
+        #env:
+        #  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

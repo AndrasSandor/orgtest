@@ -1,0 +1,103 @@
+name: Create PR on release
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types: [published]
+    #paths:
+    #  - "campaigns-backend/**"
+    #  - "microservices/bots/discord/**"
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  updateTags:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        include:
+
+          - context: campaigns-backend
+            dockerfile: Dockerfile
+            app: campaigns-backend
+
+          - context: microservices/bots/discordbot
+            dockerfile: Dockerfile
+            app: discordbot
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Update tag in values.yaml
+        run: |
+          echo "Folder: ${{ matrix.app }}"
+          VALUES_FILE="./ops/charts/${{ matrix.app }}/values.yaml"
+          FOLDER_SHA=$(git log -1 --format=format:%H -- ${{ matrix.context }})
+          CURRENT_TAG=$(cat $VALUES_FILE | grep 'tag:' | awk '{print $2}')
+      
+          echo "Latest commit hash of the folder: $FOLDER_SHA"
+          echo "Current tag value: $CURRENT_TAG"
+      
+          if [ "$FOLDER_SHA" != "$CURRENT_TAG" ]; then
+            echo "Updating tag in $VALUES_FILE"
+            sed -i "s/tag: .*/tag: $FOLDER_SHA/g" "$VALUES_FILE"
+          else
+            echo "No changes, the tag value is already up-to-date."
+            exit 0
+          fi
+
+
+      ## the modifed values.yaml files are uploaded as artifacts in each job created by matrix, and added to the same commit in the createPullRequest job
+      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        with:
+          name: ${{ matrix.app }}
+          path: ops/charts/${{ matrix.app }}/values.yaml
+
+  createPullRequest:
+    needs: updateTags
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          path: ops/charts/
+
+      - uses: crazy-max/ghaction-import-gpg@72b6676b71ab476b77e676928516f6982eef7a41
+        name: Import GPG key
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git-user-signingkey: true
+          git-commit-gpgsign: true
+
+      ## workaround step, signed commits are not created otherwise
+      - name: Create a signed commit of changes in values.yaml
+        run: |
+          git config --global user.email "137049774+dropyacht-deployments@users.noreply.github.com"
+          git config --global user.name "Dropyacht Deployments"
+          git add ./ops/charts/**/values.yaml
+          git commit -S -m "Update tag"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38
+        with:
+          commit-message: "Deploy ${{ matrix.app }} to production with tag ${{ github.sha }}"
+          title: "Release to production"
+          body: "Merging this PR will deploy to production. Latest Docker image is available in https://console.cloud.google.com/artifacts/docker/ops-production-365219/us/dropyacht-images?authuser=0&project=ops-production-365219 "
+          branch: prod-release
+          base: main
+          add-paths: |
+            *values.yaml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          committer: Dropyacht Deployments <137049774+dropyacht-deployments@users.noreply.github.com>
+

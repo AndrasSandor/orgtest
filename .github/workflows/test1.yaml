@@ -1,0 +1,17 @@
+name: Test1 Workflow
+
+on:
+  push:
+    paths:
+      - 'test1/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Echo test step
+        run: echo "This is test1"
+

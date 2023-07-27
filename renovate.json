@@ -1,0 +1,34 @@
+{
+  "extends": ["config:base", ":dependencyDashboard"],
+  "enabledManagers": ["dockerfile", "docker-compose", "helm-values"],
+  "packageRules": [
+    {
+      "datasources": ["docker"],
+      "packagePatterns": ["^andrassandor/test$"],
+      "updateTypes": ["digest"],
+      "automerge": false
+    }
+  ],
+  "repositories": [
+    {
+      "repository": "dropyacht-inc/platform",
+      "baseBranches": ["main"],
+      "automerge": false,
+      "commitMessagePrefix": "[RenovateBot]",
+      "onboarding": true,
+      "packageRules": [
+        {
+          "matchUpdateTypes": ["version"],
+          "groupName": "Image Updates",
+        }
+      ],
+      "ignorePaths": [
+        "ops/charts/campaigns-backend/templates/**",
+        "ops/charts/core/templates/**",
+        "ops/charts/attribution-server/templates/**",
+        "ops/charts/discordbot/templates/**"
+      ],
+      "labels": ["renovate"]
+    }
+  ]
+}

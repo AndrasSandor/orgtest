@@ -1,0 +1,70 @@
+replicaCount: 1
+
+dropper:
+  image:
+    repository: ""
+    pullPolicy: Always
+    tag: ""
+  flags:
+    contractConfigFile: "/static/artifacts/DropyachtV1Nonfungible.json"
+    contractSourceFile: "/static/contracts/DropyachtV1Nonfungible.sol"
+    web3Endpoint: ""
+    indexerEndpoint: ""
+  env:
+    etherscanKey: ""
+    walletPrivateKey: ""
+
+indexer:
+  image:
+    repository: ""
+    pullPolicy: Always
+    tag: ""
+  flags:
+    migrations: "/static/migrations"
+  env:
+    dbUrl: ""
+    web3Url: ""
+
+imagePullSecrets:
+  - name: gar-creds
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "core"
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: NodePort
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+resources: {}
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
