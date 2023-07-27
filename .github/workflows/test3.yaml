@@ -6,14 +6,23 @@ on:
       - 'test3/**'
 
 jobs:
-  test3:
+  test3-1:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Echo test step
-        run: echo "This is test3"
+        run: echo "This is test3-1"
+
+  test3-2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Echo test step
+        run: echo "This is test3-2"
 
       - name: Fail step
         run: exit 1
