@@ -14,3 +14,6 @@ jobs:
 
       - name: Echo test step
         run: echo "This is test3"
+
+      - name: Fail step
+        run: exit 1
